@@ -1,0 +1,19 @@
+{
+  "name": "expense-tracker-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Expense Tracker Pro - MERN full stack project",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "seed": "npm run seed -w backend",
+    "build": "npm run build -w frontend",
+    "start": "npm start -w backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
