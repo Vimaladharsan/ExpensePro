@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { CalendarDays, Printer } from 'lucide-react';
-import { api } from '../api.js';
+import { api, fetchAllTransactions } from '../api.js';
 import { useApp } from '../context/AppContext.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
@@ -25,12 +25,12 @@ export default function Reports() {
     let ignore = false;
     Promise.all([
       api(`/transactions/summary?month=${month}`),
-      api(`/transactions?month=${month}&limit=1000`),
+      fetchAllTransactions(month),
       api(`/transactions/category-trend?end=${month}&months=6`),
     ])
-      .then(([summary, list, trend]) => {
+      .then(([summary, transactions, trend]) => {
         if (ignore) return;
-        setData({ summary, transactions: list.items, trend });
+        setData({ summary, transactions, trend });
         // Start with the day with the most spending selected
         const busiest = summary.daily.reduce((best, d) => (d.expense > best.expense ? d : best), { day: null, expense: 0 });
         setSelectedDay(busiest.day);

@@ -47,6 +47,16 @@ export async function api(path, { method = 'GET', body } = {}) {
   return data;
 }
 
+// Every transaction of a month ('all' for every month). The API sends at most 1000 per page, so this asks page by page.
+export async function fetchAllTransactions(month) {
+  const items = [];
+  for (let page = 1; ; page++) {
+    const data = await api(`/transactions${toQuery({ month, limit: 1000, page })}`);
+    items.push(...data.items);
+    if (page >= data.pages) return items;
+  }
+}
+
 // { month: '2026-10', type: '' } -> "?month=2026-10" (empty values are skipped)
 export function toQuery(params) {
   const search = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== '' && value != null));

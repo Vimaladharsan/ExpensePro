@@ -11,9 +11,13 @@
     "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev -w backend\" \"npm run dev -w frontend\"",
     "seed": "npm run seed -w backend",
     "build": "npm run build -w frontend",
-    "start": "npm start -w backend"
+    "start": "npm start -w backend",
+    "test": "npm test --workspaces"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

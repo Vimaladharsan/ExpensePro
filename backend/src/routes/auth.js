@@ -8,9 +8,10 @@ import { DEMO_EMAIL } from '../constants.js';
 
 const router = express.Router();
 
-// The reply after register/login: a login token (valid 7 days) and the user's public details
+// The reply after register/login: a login token (valid 7 days) and the user's public details.
+// "v" is the account's token version, so a password change can cancel older tokens.
 function authReply(user) {
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign({ id: user._id, v: user.tokenVersion }, process.env.JWT_SECRET, { expiresIn: '7d' });
   return { token, user: publicUser(user) };
 }
 
@@ -70,8 +71,10 @@ router.put('/password', requireAuth, async (req, res) => {
   if (!(await bcrypt.compare(currentPassword, user.password))) throw httpError(400, 'Current password is incorrect');
 
   user.password = await bcrypt.hash(newPassword, 10);
+  user.tokenVersion += 1; // every token issued before now stops working
   await user.save();
-  res.json({ message: 'Password changed' });
+  // A fresh token keeps this device logged in, while every other device is signed out
+  res.json({ message: 'Password changed', token: authReply(user).token });
 });
 
 export default router;

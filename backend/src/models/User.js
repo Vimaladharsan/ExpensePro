@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema(
     },
     // Stored as a bcrypt hash, never as plain text, and left out of queries unless asked for
     password: { type: String, required: true, select: false },
+    // Goes up by 1 when the password changes; login tokens carrying an older number stop working
+    tokenVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

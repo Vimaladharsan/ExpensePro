@@ -1,18 +1,29 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Wallet } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 import Layout from './components/Layout.jsx';
-import Landing from './pages/Landing.jsx';
-import Login from './pages/Login.jsx';
-import Register from './pages/Register.jsx';
-import Dashboard from './pages/Dashboard.jsx';
-import Transactions from './pages/Transactions.jsx';
-import Budgets from './pages/Budgets.jsx';
-import Goals from './pages/Goals.jsx';
-import Reports from './pages/Reports.jsx';
-import Settings from './pages/Settings.jsx';
+
+// Each page is downloaded only when it's first opened, so the first visit loads much less code
+const Landing = lazy(() => import('./pages/Landing.jsx'));
+const Login = lazy(() => import('./pages/Login.jsx'));
+const Register = lazy(() => import('./pages/Register.jsx'));
+const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
+const Transactions = lazy(() => import('./pages/Transactions.jsx'));
+const Budgets = lazy(() => import('./pages/Budgets.jsx'));
+const Goals = lazy(() => import('./pages/Goals.jsx'));
+const Reports = lazy(() => import('./pages/Reports.jsx'));
+const Settings = lazy(() => import('./pages/Settings.jsx'));
 
 export default function App() {
+  return (
+    <Suspense fallback={<Splash />}>
+      <AppRoutes />
+    </Suspense>
+  );
+}
+
+function AppRoutes() {
   return (
     <Routes>
       <Route path="/welcome" element={<Landing />} />

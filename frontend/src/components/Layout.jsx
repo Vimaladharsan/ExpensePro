@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   ArrowLeftRight, CalendarDays, ChartColumnBig, ChevronLeft, ChevronRight, Flag, LayoutDashboard, LogOut, Moon, Plus,
@@ -12,6 +12,19 @@ import TransactionModal from './TransactionModal.jsx';
 import ConfirmDialog from './ConfirmDialog.jsx';
 import QuickAdd, { isTypingIn } from './QuickAdd.jsx';
 import AlertsBell from './AlertsBell.jsx';
+import ErrorBoundary from './ErrorBoundary.jsx';
+import { Skeleton } from './ui.jsx';
+
+// Shown for a moment while a page's code downloads
+function PageLoading() {
+  return (
+    <div className="page" aria-busy="true">
+      <Skeleton height={28} width="40%" />
+      <Skeleton height={140} radius={16} />
+      <Skeleton height={260} radius={16} />
+    </div>
+  );
+}
 
 const NAV = [
   { to: '/', label: 'Dashboard', short: 'Home', icon: LayoutDashboard },
@@ -133,9 +146,14 @@ export default function Layout() {
           </header>
 
           <main className="content">
-            {/* key restarts the fade-in animation on every page change */}
+            {/* key restarts the fade-in animation (and clears a crashed page) on every page change */}
             <div key={location.pathname} className="page-enter">
-              <Outlet />
+              <ErrorBoundary>
+                {/* Each page's code is downloaded the first time it's opened */}
+                <Suspense fallback={<PageLoading />}>
+                  <Outlet />
+                </Suspense>
+              </ErrorBoundary>
             </div>
           </main>
         </div>

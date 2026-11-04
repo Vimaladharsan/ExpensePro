@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Database, Download, KeyRound, Keyboard, LoaderCircle, Moon, Palette, Sun, UserRound } from 'lucide-react';
-import { api } from '../api.js';
+import { api, fetchAllTransactions, saveToken } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useApp } from '../context/AppContext.js';
 import { useToast } from '../context/ToastContext.jsx';
@@ -42,9 +42,10 @@ export default function Settings() {
     setSavingPassword(true);
     setPasswordError('');
     try {
-      await api('/auth/password', { method: 'PUT', body: { currentPassword: passwords.current, newPassword: passwords.next } });
+      const data = await api('/auth/password', { method: 'PUT', body: { currentPassword: passwords.current, newPassword: passwords.next } });
+      saveToken(data.token); // the old token no longer works; other devices are signed out
       setPasswords({ current: '', next: '', confirm: '' });
-      toast.success('Password changed');
+      toast.success('Password changed. Other devices have been signed out.');
     } catch (err) {
       setPasswordError(err.message);
     }
@@ -54,9 +55,9 @@ export default function Settings() {
   async function exportAll() {
     setExporting(true);
     try {
-      const data = await api('/transactions?month=all&limit=1000');
-      if (data.items.length === 0) toast.info('No transactions to export yet');
-      else toast.success(`Exported ${downloadTransactionsCsv(data.items, 'expensepro-all-transactions.csv')} transactions`);
+      const items = await fetchAllTransactions('all');
+      if (items.length === 0) toast.info('No transactions to export yet');
+      else toast.success(`Exported ${downloadTransactionsCsv(items, 'expensepro-all-transactions.csv')} transactions`);
     } catch (err) {
       toast.error(err.message);
     }

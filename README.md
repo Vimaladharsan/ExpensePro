@@ -4,6 +4,7 @@
 
 Track income and expenses, set budgets, save toward goals, and see where your money goes. You can add a transaction by just typing a sentence like `250 pizza yesterday upi`.
 
+[![CI](https://github.com/Vimaladharsan/ExpensePro/actions/workflows/ci.yml/badge.svg)](https://github.com/Vimaladharsan/ExpensePro/actions/workflows/ci.yml)
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?logo=mongodb&logoColor=white)
 ![Express](https://img.shields.io/badge/Express_5-000000?logo=express&logoColor=white)
 ![React](https://img.shields.io/badge/React_18-61DAFB?logo=react&logoColor=black)
@@ -20,7 +21,8 @@ Track income and expenses, set budgets, save toward goals, and see where your mo
 - **Budgets with alerts:** set an overall monthly limit and per-category limits, see a "safe to spend per day" figure, and get bell alerts as you approach or pass a limit.
 - **Savings goals:** set a target and deadline, add or withdraw money, and see how much to save each month to finish on time.
 - **Reports:** monthly statement, a spending calendar heatmap, category trends, payment-method and weekday breakdowns, top expenses, and print / save as PDF.
-- **Private accounts:** JWT login with bcrypt-hashed passwords. Every API query is scoped to the logged-in user.
+- **Private accounts:** JWT login with bcrypt-hashed passwords. Every API query is scoped to the logged-in user, and changing your password signs out your other devices.
+- **Tested:** 38 automated tests (API and Quick Add parser) run on every push with GitHub Actions.
 - **Polished UI:** light and dark themes, a responsive layout with bottom navigation on phones, keyboard shortcuts, CSV export, toasts, confirmation dialogs, loading skeletons and empty states.
 
 ## Tech stack
@@ -30,7 +32,8 @@ Track income and expenses, set budgets, save toward goals, and see where your mo
 | Frontend | React 18, React Router, Vite, Recharts, Lucide icons, plain CSS |
 | Backend | Node.js, Express 5, REST + JSON |
 | Database | MongoDB with Mongoose (aggregation pipelines for summaries and trends) |
-| Auth | JSON Web Tokens, bcrypt password hashing |
+| Auth and security | JSON Web Tokens, bcrypt password hashing, Helmet security headers, login rate limiting |
+| Testing | Node's built-in test runner, Supertest, GitHub Actions CI |
 | Tooling | npm workspaces, `concurrently` for one-command development |
 
 ---
@@ -38,7 +41,7 @@ Track income and expenses, set budgets, save toward goals, and see where your mo
 ## Getting started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) 18 or newer
+- [Node.js](https://nodejs.org/) 22 or newer
 - [MongoDB](https://www.mongodb.com/try/download/community) running locally, or a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster
 
 ### 1. Clone and install
@@ -87,6 +90,12 @@ The demo account's password can't be changed, so the demo login always works.
 npm run build   # builds the React app into frontend/dist
 npm start       # Express serves the website and the API on one port (5050)
 ```
+
+### Run the tests
+```bash
+npm test
+```
+This runs 29 API tests and 9 Quick Add parser tests. The API tests use a separate database: your `MONGO_URI` database name with `-test` added, or `MONGO_URI_TEST` if you set it. The test database is emptied before and after each run, and the tests refuse to run against any database whose name doesn't end in `-test`, so your real data is never touched.
 
 ---
 
@@ -170,10 +179,13 @@ Example body:
 ## Project structure
 
 ```
+├── .github/workflows/ci.yml    # runs the tests and build on every push
 ├── backend/
 │   ├── .env.example            # settings template (copy to .env)
+│   ├── test/                   # API tests (auth, transactions, budgets, goals)
 │   └── src/
-│       ├── server.js           # Express app, routes, serves the built frontend
+│       ├── app.js              # Express app: security, routes, serves the built frontend
+│       ├── server.js           # loads settings, connects to MongoDB, starts the server
 │       ├── seed.js             # demo account and sample data
 │       ├── constants.js        # categories, payment methods, goal icons
 │       ├── config/db.js        # MongoDB connection
@@ -187,15 +199,17 @@ Example body:
 │       ├── components/         # Layout, QuickAdd, Charts, AlertsBell, modals
 │       ├── context/            # auth, toasts, app state (month, theme)
 │       ├── pages/              # Landing, Dashboard, Transactions, Budgets, Goals, Reports, Settings
-│       └── utils/              # Quick Add parser, formatting, CSV export
+│       └── utils/              # Quick Add parser (with tests), formatting, CSV export
 └── package.json                # npm workspaces and root scripts
 ```
 
 ## How it works
 
-- **Authentication:** passwords are hashed with bcrypt, and login returns a JWT that is valid for 7 days. The `requireAuth` middleware verifies the token on every protected route and attaches the user. Every database query is filtered by that user's id.
+- **Authentication:** passwords are hashed with bcrypt, and login returns a JWT that is valid for 7 days. The `requireAuth` middleware verifies the token on every protected route and attaches the user. Every database query is filtered by that user's id, so one user can never read or change another user's data (covered by tests).
+- **Security:** Helmet sets security headers, including a Content-Security-Policy that blocks inline scripts. Login and sign-up are rate-limited to 20 attempts per 15 minutes per IP. Each token carries a version number, so changing your password signs out every other device while keeping you logged in.
 - **Validation:** forms are validated in the browser for instant feedback and again on the server. Mongoose schemas only accept known payment methods and a category that matches the type (for example, "Salary" only for income).
 - **Reports:** monthly summaries, trends and category breakdowns are computed in MongoDB with aggregation pipelines, not in JavaScript, so only the results are sent to the browser.
+- **Performance:** every page is loaded on demand with `React.lazy`, so the first visit downloads only the code it needs. An error boundary shows a friendly message instead of a blank screen if a page fails.
 
 ## Available scripts
 
@@ -207,6 +221,7 @@ Run from the project root:
 | `npm run seed` | Creates or resets the demo account |
 | `npm run build` | Builds the frontend for production |
 | `npm start` | Runs the production server (API and website on one port) |
+| `npm test` | Runs all tests (backend API and frontend parser) |
 
 ---
 

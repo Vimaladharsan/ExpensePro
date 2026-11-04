@@ -18,6 +18,11 @@ export async function requireAuth(req, res, next) {
   const user = await User.findById(payload.id);
   if (!user) return res.status(401).json({ message: 'Please log in again' });
 
+  // A password change signs out every other device (tokens from before it carry an older version number)
+  if ((payload.v ?? 0) !== user.tokenVersion) {
+    return res.status(401).json({ message: 'Your password was changed. Please log in again.' });
+  }
+
   req.user = user;
   next();
 }
